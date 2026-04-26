@@ -4,7 +4,13 @@ const { createApp } = require("./src/app");
 // Load local environment variables from .env for development.
 // In AWS Lambda, environment variables are provided by the platform.
 if (require.main === module) {
-  require("dotenv").config({ override: true, quiet: true });
+  const isLambda = Boolean(
+    process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.AWS_EXECUTION_ENV
+  );
+
+  if (!isLambda) {
+    require("dotenv").config({ override: false, quiet: true });
+  }
 }
 
 const { app, config } = createApp();

@@ -15,6 +15,8 @@ function parseBool(value) {
 }
 
 function getConfig() {
+  const parsedPort = Number(process.env.PORT);
+
   return {
     mongoUri: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017",
     mongoDbName: process.env.MONGODB_DB || "aws_node_app",
@@ -22,7 +24,7 @@ function getConfig() {
     authDisabled: parseBool(process.env.AUTH_DISABLED),
     jwtSecret: process.env.JWT_SECRET,
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1h",
-    port: process.env.PORT ? Number(process.env.PORT) : 3001
+    port: Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : 3001
   };
 }
 
