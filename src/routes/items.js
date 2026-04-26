@@ -22,9 +22,8 @@ function createItemsRouter({ getCollection } = {}) {
       const { _id, ...data } = req.body || {};
       const item = { id: randomUUID(), ...data };
 
-      await collection.insertOne(item);
-
-      res.json(item);
+      const result = await collection.insertOne(item);
+      res.json({ ...item, _id: String(result.insertedId) });
     } catch (error) {
       next(error);
     }
@@ -35,7 +34,14 @@ function createItemsRouter({ getCollection } = {}) {
     try {
       const collection = await getCollection();
       const items = await collection.find({}).toArray();
-      res.json(items.map(({ _id, ...rest }) => rest));
+
+      res.json(
+        items.map((doc) => {
+          const _id = doc?._id ? String(doc._id) : undefined;
+          const id = doc?.id ?? _id;
+          return { ...doc, _id, id };
+        })
+      );
     } catch (error) {
       next(error);
     }
