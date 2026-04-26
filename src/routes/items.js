@@ -1,5 +1,5 @@
 const express = require("express");
-const { v4: uuidv4 } = require("uuid");
+const { randomUUID } = require("crypto");
 // Auth is intentionally disabled for now.
 // const { createAuthMiddleware } = require("../middleware/auth");
 
@@ -20,7 +20,7 @@ function createItemsRouter({ getCollection } = {}) {
     try {
       const collection = await getCollection();
       const { _id, ...data } = req.body || {};
-      const item = { id: uuidv4(), ...data };
+      const item = { id: randomUUID(), ...data };
 
       await collection.insertOne(item);
 
