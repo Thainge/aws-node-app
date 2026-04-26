@@ -1,24 +1,28 @@
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
-const { PutCommand, ScanCommand, DeleteCommand } = require("@aws-sdk/lib-dynamodb");
+// Auth is intentionally disabled for now.
+// const { createAuthMiddleware } = require("../middleware/auth");
 
-function createItemsRouter({ dynamo, tableName }) {
-  if (!dynamo) throw new Error("createItemsRouter: 'dynamo' is required");
-  if (!tableName) throw new Error("createItemsRouter: 'tableName' is required");
+function createItemsRouter({ getCollection } = {}) {
+  if (!getCollection) throw new Error("createItemsRouter: 'getCollection' is required");
 
   const router = express.Router();
 
-  // CREATE
-  router.post("/", async (req, res, next) => {
-    try {
-      const item = { id: uuidv4(), ...req.body };
+  const noop = (req, res, next) => next();
+  const requireAuth = noop;
+  const requireItemsAccess = noop;
 
-      await dynamo.send(
-        new PutCommand({
-          TableName: tableName,
-          Item: item
-        })
-      );
+  // If/when you want to re-enable JWT auth, restore something like:
+  // const { requireAuth, requireItemsAccess } = createAuthMiddleware({ jwtSecret });
+
+  // CREATE
+  router.post("/", requireAuth, requireItemsAccess, async (req, res, next) => {
+    try {
+      const collection = await getCollection();
+      const { _id, ...data } = req.body || {};
+      const item = { id: uuidv4(), ...data };
+
+      await collection.insertOne(item);
 
       res.json(item);
     } catch (error) {
@@ -27,55 +31,58 @@ function createItemsRouter({ dynamo, tableName }) {
   });
 
   // READ
-  router.get("/", async (req, res, next) => {
+  router.get("/", requireAuth, requireItemsAccess, async (req, res, next) => {
     try {
-      const result = await dynamo.send(
-        new ScanCommand({
-          TableName: tableName
-        })
-      );
-
-      res.json(result.Items);
+      const collection = await getCollection();
+      const items = await collection.find({}).toArray();
+      res.json(items.map(({ _id, ...rest }) => rest));
     } catch (error) {
       next(error);
     }
   });
 
   // UPDATE
-  router.put("/:id", async (req, res, next) => {
+  router.put("/:id", requireAuth, requireItemsAccess, async (req, res, next) => {
     try {
+      const collection = await getCollection();
       const { id } = req.params;
+      const { _id, ...data } = req.body || {};
 
-      await dynamo.send(
-        new PutCommand({
-          TableName: tableName,
-          Item: { id, ...req.body }
-        })
+      await collection.updateOne(
+        { id },
+        {
+          $set: {
+            id,
+            ...data
+          }
+        },
+        { upsert: true }
       );
 
-      res.json({ id, ...req.body });
+      res.json({ id, ...data });
     } catch (error) {
       next(error);
     }
   });
 
   // DELETE
-  router.delete("/:id", async (req, res, next) => {
+  router.delete(
+    "/:id",
+    requireAuth,
+    requireItemsAccess,
+    async (req, res, next) => {
     try {
+      const collection = await getCollection();
       const { id } = req.params;
 
-      await dynamo.send(
-        new DeleteCommand({
-          TableName: tableName,
-          Key: { id }
-        })
-      );
+      await collection.deleteOne({ id });
 
       res.json({ success: true });
     } catch (error) {
       next(error);
     }
-  });
+    }
+  );
 
   return router;
 }

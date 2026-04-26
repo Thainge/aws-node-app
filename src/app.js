@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 
 const { getConfig } = require("./config");
-const { createDynamoDocClient } = require("./aws/dynamo");
+const { getCollection } = require("./db/mongo");
 const { createItemsRouter } = require("./routes/items");
 
 function createApp() {
@@ -12,13 +12,17 @@ function createApp() {
   app.use(cors());
   app.use(express.json());
 
-  const dynamo = createDynamoDocClient({ region: config.region });
+  const getItemsCollection = () =>
+    getCollection({
+      uri: config.mongoUri,
+      dbName: config.mongoDbName,
+      collectionName: config.mongoCollection
+    });
 
   app.use(
     "/items",
     createItemsRouter({
-      dynamo,
-      tableName: config.tableName
+      getCollection: getItemsCollection
     })
   );
 

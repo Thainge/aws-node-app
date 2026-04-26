@@ -1,3 +1,7 @@
+// Load local environment variables from .env for development.
+// In AWS Lambda, environment variables are typically provided by the platform.
+require("dotenv").config({ override: true, quiet: true });
+
 const serverless = require("serverless-http");
 const { createApp } = require("./src/app");
 

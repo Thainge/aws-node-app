@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "db:ping": "node scripts/db-ping.js",
+    "mint-token": "node scripts/mint-token.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,10 +14,12 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.879.0",
-    "@aws-sdk/lib-dynamodb": "^3.879.0",
     "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.19.0",
+    "mongoose": "^9.5.0",
     "serverless-http": "^4.0.0",
     "uuid": "^14.0.0"
   }
