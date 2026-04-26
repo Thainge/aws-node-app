@@ -22,8 +22,8 @@ function createItemsRouter({ getCollection } = {}) {
       const { _id, ...data } = req.body || {};
       const item = { id: randomUUID(), ...data };
 
-      const result = await collection.insertOne(item);
-      res.json({ ...item, _id: String(result.insertedId) });
+      await collection.insertOne(item);
+      res.json(item);
     } catch (error) {
       next(error);
     }
@@ -37,9 +37,9 @@ function createItemsRouter({ getCollection } = {}) {
 
       res.json(
         items.map((doc) => {
-          const _id = doc?._id ? String(doc._id) : undefined;
-          const id = doc?.id ?? _id;
-          return { ...doc, _id, id };
+          const { _id, ...rest } = doc || {};
+          const id = rest?.id ?? (_id ? String(_id) : undefined);
+          return { ...rest, id };
         })
       );
     } catch (error) {
