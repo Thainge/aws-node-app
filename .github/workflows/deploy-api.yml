@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+env:
+  LAMBDA_FUNCTION_NAME: aws-node-app
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -21,9 +24,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Zip Lambda package
+      # Optional: build step if you use TypeScript
+      # - name: Build
+      #   run: npm run build
+
+      - name: Create deployment package
         run: |
-          zip -r function.zip .
+          zip -r function.zip . \
+            -x "*.git*" \
+               "node_modules/.cache/*" \
+               ".github/*" \
+               "*.log"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -32,8 +43,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Deploy to Lambda
+      - name: Deploy to Lambda (update code)
         run: |
           aws lambda update-function-code \
-            --function-name node-api \
+            --function-name $LAMBDA_FUNCTION_NAME \
             --zip-file fileb://function.zip
+
+      - name: Update Lambda environment variables
+        run: |
+          aws lambda update-function-configuration \
+            --function-name $LAMBDA_FUNCTION_NAME \
+            --environment "Variables={MONGODB_URI=${{ secrets.MONGODB_URI }},MONGODB_DB=${{ secrets.MONGODB_DB }},MONGODB_COLLECTION=${{ secrets.MONGODB_COLLECTION }}}"
